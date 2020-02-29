@@ -1,45 +1,27 @@
 #lang racket/base
 
-(require racket/string)
 (require pollen/decode txexpr)
 (require pollen/tag)
 
-(provide prepare-article
-         title
+(provide title
          subtitle
-         section
+         heading
          subheading
          blockquote
          epigraph
          sn mn)
 
-(define side-note-id #f)
-(define (next-side-note!)
-  (set! side-note-id (add1 side-note-id))
-  (format "sn-~a" side-note-id))
+(define-tag-function (title attrs elems)
+  `(h1 ,attrs ,@elems))
 
-(define margin-note-id #f)
-(define (next-margin-note!)
-  (set! margin-note-id (add1 margin-note-id))
-  (format "mn-~a" margin-note-id))
+(define-tag-function (subtitle attrs elems)
+  `(p ,(cons '(class "subtitle") attrs) ,@elems))
 
-(define (prepare-article)
-  (set! side-note-id 0)
-  (set! margin-note-id 0))
+(define-tag-function (heading attrs elems)
+  `(h2 ,attrs ,@elems))
 
-(define (title . text)
-  `(h1 ,(string-join text "")))
-
-(define (subtitle . text)
-  `(p ((class "subtitle")) ,@text))
-
-(define (section #:heading [heading #f] . elems)
-  (if heading
-      `(section (h2 ,heading) ,@elems)
-      `(section ,@elems)))
-
-(define (subheading . text)
-  `(h3 ,@text))
+(define-tag-function (subheading attrs elems)
+  `(h3 ,attrs ,@elems))
 
 (define (blockquote #:author author #:source source #:href [href #f] . elems)
   `(blockquote ,(if href `((cite ,href)) empty)
@@ -51,13 +33,13 @@
   `(div ((class "epigraph")) ,(apply blockquote elems #:author author #:source source #:href href)))
 
 (define (sn . elems)
-  (let ([id (next-side-note!)])
+  (let ([id (symbol->string (gensym "sn-"))])
     `(span (label ((for ,id) (class "margin-toggle sidenote-number")))
            (input ((type "checkbox") (id ,id) (class "margin-toggle")))
            (span ((class "sidenote")) ,@elems))))
 
 (define (mn . elems)
-  (let ([id (next-margin-note!)])
+  (let ([id (symbol->string (gensym "mn-"))])
     `(span (label ((for ,id) (class "margin-toggle")) "⊕")
            (input ((type "checkbox") (id ,id) (class "margin-toggle")))
            (span ((class "marginnote")) ,@elems))))
